@@ -3,12 +3,22 @@ import { LitElement, html, css } from "lit";
 export class SlideArrows extends LitElement {
   static styles = css`
     :host {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      transform: translateY(-50%);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: var(--ddd-spacing-2) 0;
+      pointer-events: none;
+      z-index: 10;
+      padding: 0 12px;
+      box-sizing: border-box;
     }
+
     button {
+      pointer-events: auto;
       font-size: var(--ddd-font-size-m);
       padding: var(--ddd-spacing-2);
       cursor: pointer;

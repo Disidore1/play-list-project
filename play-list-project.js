@@ -60,17 +60,21 @@ _handleSlotChange(e) {
     this.index = this._total - 1;
   }
 }
+
 _nextSlide() {
   if (this._total === 0) return;
   this.index = (this.index + 1) % this._total;
+  localStorage.setItem("play-list-project-index", this.index);
+  this._updateUrl();
 }
 
 _prevSlide() {
   if (this._total === 0) return;
   this.index = (this.index - 1 + this._total) % this._total;
-
-
+  localStorage.setItem("play-list-project-index", this.index);
+  this._updateUrl();
 }
+
 updated(changedProperties) {
   if (!changedProperties.has("index")) return;
 
@@ -86,19 +90,53 @@ updated(changedProperties) {
     block: "nearest",
   });
 }
-  async loadFox() {
+
+async loadFox() {
     try {
       const response = await fetch("https://randomfox.ca/floof/");
       const data = await response.json();
       this.foxImage = data.image || "";
       this.foxLink = data.link || "";
+      this._applyFoxToFirstSlide();
     } catch (error) {
       console.error("Fox API failed:", error);
     }
   }
-    firstUpdated() {
-    this.loadFox();
+
+_applyFoxToFirstSlide() {
+  const firstSlide = this.querySelector("play-list-slide");
+  if (!firstSlide) return;
+
+  const imageEl = firstSlide.querySelector('img[slot="image"]');
+  if (imageEl && this.foxImage) {
+    imageEl.src = this.foxImage;
+    imageEl.alt = "Random fox from API";
   }
+}
+firstUpdated() {
+  const url = new URL(window.location.href);
+  const slideParam = url.searchParams.get("slide");
+
+  if (slideParam !== null) {
+    this.index = Number(slideParam);
+  } else {
+    const savedIndex = localStorage.getItem("play-list-project-index");
+    if (savedIndex !== null) {
+      this.index = Number(savedIndex);
+    }
+  }
+
+  setTimeout(() => {
+    this.loadFox();
+  }, 100);
+}
+
+_updateUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("slide", this.index);
+  window.history.replaceState({}, "", url);
+}
+
   // Lit scoped styles
   static get styles() {
     return [super.styles,
@@ -136,6 +174,26 @@ updated(changedProperties) {
       flex: 0 0 100%;
       scroll-snap-align: start; 
     }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: var(--ddd-spacing-3);
+      }
+
+      .viewport {
+        flex: 1;
+        overflow-x: auto;
+        display: flex;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+      }
+
+      .viewport::-webkit-scrollbar {
+        display: none;
+      }
+      .slider-shell {
+        position: relative;
+      }
     `];
   }
 
@@ -146,25 +204,31 @@ render() {
     <div class="wrapper">
       <h3><span>${this.t.title}:</span> ${this.title}</h3>
 
-      <slide-arrows
-        @next=${() => this._nextSlide()}
-        @prev=${() => this._prevSlide()}
-      ></slide-arrows>
-
       <p>Slides: ${this._total} | Current index: ${this.index}</p>
 
-      <div class="viewport">
-        <slot id="slides" @slotchange=${this._handleSlotChange}></slot>
+      <div class="slider-shell">
+        <slide-arrows
+          @next=${() => this._nextSlide()}
+          @prev=${() => this._prevSlide()}
+        ></slide-arrows>
+
+        <div class="viewport">
+          <slot id="slides" @slotchange=${this._handleSlotChange}></slot>
+        </div>
       </div>
 
       <slide-indicator
         .total=${this._total}
         .active=${this.index}
-        @go-to=${(e) => (this.index = e.detail)}
+       @go-to=${(e) => {
+          this.index = e.detail;
+          localStorage.setItem("play-list-project-index", this.index);
+          this._updateUrl();
+        }}
       ></slide-indicator>
     </div>
   `;
-  }
+}
   /**
    * haxProperties integration via file reference
    */

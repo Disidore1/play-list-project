@@ -33,42 +33,37 @@
 </head>
 
 <body>
-  <div id="demo">
-    <h1>play-list-project</h1>
-    <!-- this is going to do whatever the tag's defaults are -->
-    <h2>Default</h2>
-    <play-list-project></play-list-project>
-    <h2>Slot usage</h2>
-    <play-list-project data-accent="2" data-primary="17" title="Demo slider">
-     <play-list-slide
-          top-heading="RandomFox API"
-          second-heading="Random fox"
-        >
-          <img
-            src="https://randomfox.ca/images/1.jpg"
-            alt="Random fox"
-            style="max-width: 100%; border-radius: 12px; margin-bottom: 12px;"
-          />
-          <p>This slide is for the RandomFox API integration.</p>
-          <p>Longer text here will scroll inside the slide once the slide CSS is in play-list-slide.js.</p>
-          <p>This is line 3.</p>
-          <p>This is line 4.</p>
-          <p>This is line 5.</p>
-          <p>This is line 6.</p>
-          <p>This is line 7.</p>
-          <p>This is line 8.</p>
-        </play-list-slide>
+            <div id="demo">
+              <h1>play-list-project</h1>
+              <!-- this is going to do whatever the tag's defaults are -->
+              <play-list-project data-accent="2" data-primary="17" title="Demo slider">
+            <play-list-slide
+                top-heading="RandomFox API"
+                second-heading="Random fox"
+              >
+                <img
+                  slot="image"
+                  src="https://randomfox.ca/images/1.jpg"
+                  alt="Random fox"
+                />
+                <p>This is your API slide.</p>
+                <p>Extra text here should scroll.</p>
+                <p>More content...</p>
+                <p>More content...</p>
+                <p>More content...</p>
+                <p>More content...</p>
+                <p>More content...</p>
+                <p>More content...</p>
+              </play-list-slide>
 
-      <play-list-slide>
-        <p>Slide two content</p>
-      </play-list-slide>
+            <play-list-slide>
+              <p>Second slide</p>
+            </play-list-slide>
 
-      <play-list-slide>
-        <p>Slide three content</p>
-      </play-list-slide>
-    </play-list-project>    <h2>Property usage</h2>
-    <play-list-project id="example" title="Sample property title"></play-list-project>
-  </div>
+            <play-list-slide>
+              <p>Third slide</p>
+            </play-list-slide>
+          </play-list-project>
   <script type="module" src="./play-list-project.js"></script>
 
   <!-- Take HAX, the Web and you further down the rabbit hole -->
