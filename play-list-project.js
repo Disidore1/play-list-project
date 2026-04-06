@@ -28,38 +28,22 @@ export class PlayListProject extends DDDSuper(I18NMixin(LitElement)) {
     this.index = 0;
     this._slides = [];
     this._total = 0;
-    this.title = "";
-    this.t = this.t || {};
-    this.t = {
-      ...this.t,
-      title: "Title",
-    };
     this.foxImage = "";
     this.foxLink = "";
+    this.apiData = null;
   }
 
   static get properties() {
     return {
       ...super.properties,
-      title: { type: String },
-      index: { type: Number, reflect: true },
-      _slides: { state: true },
-      _total: { state: true },
-      foxImage: { type: String },
-      foxLink: { type: String },
+      index: {type: Number, reflect: true },
+      _slides: {state: true},
+      _total: {state: true},
+      foxImage: {type: String},
+      foxLink: {type: String},
+      apiData: {type: Object},
     };
   }
-_handleSlotChange(e) {
-  const slot = e.target;
-  const assigned = slot.assignedElements({ flatten: true });
-
-  this._slides = assigned.filter((el) => el.tagName?.toLowerCase() === "play-list-slide");
-  this._total = this._slides.length;
-
-  if (this._total > 0 && this.index > this._total - 1) {
-    this.index = this._total - 1;
-  }
-}
 
 _nextSlide() {
   if (this._total === 0) return;
@@ -78,11 +62,8 @@ _prevSlide() {
 updated(changedProperties) {
   if (!changedProperties.has("index")) return;
 
-  const slot = this.shadowRoot?.querySelector("#slides");
-  if (!slot) return;
-
-  const slides = slot.assignedElements({ flatten: true });
-  const active = slides[this.index];
+  const slides = this.shadowRoot?.querySelectorAll("play-list-slide");
+  const active = slides?.[this.index];
 
   active?.scrollIntoView({
     behavior: "smooth",
@@ -92,16 +73,18 @@ updated(changedProperties) {
 }
 
 async loadFox() {
-    try {
-      const response = await fetch("https://randomfox.ca/floof/");
-      const data = await response.json();
-      this.foxImage = data.image || "";
-      this.foxLink = data.link || "";
-      this._applyFoxToFirstSlide();
-    } catch (error) {
-      console.error("Fox API failed:", error);
-    }
+  try {
+    const response = await fetch("/api/fox");
+    const data = await response.json();
+
+    console.log("API DATA:", data);
+
+    this.apiData = data;
+    this._total = data.images.length;
+  } catch (error) {
+    console.error("API failed:", error);
   }
+}
 
 _applyFoxToFirstSlide() {
   const firstSlide = this.querySelector("play-list-slide");
@@ -115,16 +98,25 @@ _applyFoxToFirstSlide() {
 }
 firstUpdated() {
   const url = new URL(window.location.href);
-  const slideParam = url.searchParams.get("slide");
 
-  if (slideParam !== null) {
-    this.index = Number(slideParam);
+  const activeIndexParam = url.searchParams.get("activeIndex");
+
+  if (activeIndexParam !== null) {
+    this.index = Number(activeIndexParam);
   } else {
     const savedIndex = localStorage.getItem("play-list-project-index");
     if (savedIndex !== null) {
       this.index = Number(savedIndex);
     }
   }
+
+  url.searchParams.delete("slide");
+  window.history.replaceState({}, "", url);
+
+  setTimeout(() => {
+    this.loadFox();
+  }, 100);
+
 
   setTimeout(() => {
     this.loadFox();
@@ -133,47 +125,45 @@ firstUpdated() {
 
 _updateUrl() {
   const url = new URL(window.location.href);
-  url.searchParams.set("slide", this.index);
+  url.searchParams.set("activeIndex", this.index);
   window.history.replaceState({}, "", url);
 }
 
-  // Lit scoped styles
   static get styles() {
     return [super.styles,
     css`
       :host {
         display: block;
         color: var(--ddd-theme-primary);
-        background-color: var(--ddd-theme-accent);
+        background-color: #fafafa;
         font-family: var(--ddd-font-navigation);
-        flex: 0 0 100%;
-        box-sizing: border-box;
-      }
+        }
       .wrapper {
         margin: var(--ddd-spacing-2);
         padding: var(--ddd-spacing-4);
         overflow: visible;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
       }
-      h3 span {
-        font-size: var(--play-list-project-label-font-size, var(--ddd-font-size-s));
+
+      .viewport {
+        overflow-x: auto;
+        display: flex;
+        scroll-snap-type: x mandatory;
       }
         .viewport {
-      overflow-x: auto;
-      display: flex;
-      scroll-snap-type: x mandatory;
-    }
-      .viewport {
-      scrollbar-width: none;
-    }
+        scrollbar-width: none;
+      }
 
-    .viewport::-webkit-scrollbar {
-      display: none;
-    }
+      .viewport::-webkit-scrollbar {
+        display: none;
+      }
 
-    ::slotted(play-list-slide) {
-      flex: 0 0 100%;
-      scroll-snap-align: start; 
-    }
+      ::slotted(play-list-slide) {
+        flex: 0 0 100%;
+        scroll-snap-align: start; 
+      }
       .slider-row {
         display: flex;
         align-items: center;
@@ -194,26 +184,80 @@ _updateUrl() {
       .slider-shell {
         position: relative;
       }
+
+    @media (max-width: 600px) {
+      .wrapper {
+        padding: 12px;
+        max-width: 100%;
+      }
+
+      .slider-shell {
+        width: 100%;
+      }
+
+      slide-arrows {
+        transform: scale(0.9);
+      }
+
+      slide-indicator {
+        margin-top: 10px;
+      }
+
+    @media (max-width: 600px) {
+      .wrapper {
+        padding: 12px;
+        margin: 0;
+      }
+
+      .slider-shell {
+        width: 100%;
+      }
+
+      .viewport {
+        padding: 0;
+      }
+
+      slide-arrows {
+        transform: scale(0.9);
+      }
+
+      slide-indicator {
+        margin-top: 10px;
+      }
+}
     `];
   }
 
 
-  // Lit render the HTML
 render() {
   return html`
     <div class="wrapper">
-      <h3><span>${this.t.title}:</span> ${this.title}</h3>
-
-      <p>Slides: ${this._total} | Current index: ${this.index}</p>
-
       <div class="slider-shell">
         <slide-arrows
           @next=${() => this._nextSlide()}
           @prev=${() => this._prevSlide()}
         ></slide-arrows>
 
-        <div class="viewport">
-          <slot id="slides" @slotchange=${this._handleSlotChange}></slot>
+       <div class="viewport">
+          ${(this.apiData?.images || []).map(
+            (image) => html`
+              <play-list-slide
+                top-heading=${this.apiData.author.name}
+                second-heading=${image.name}
+                author-avatar=${this.apiData.author.avatar}
+              >
+                <img
+                  slot="image"
+                  src=${image.fullSrc}
+                  alt=${image.name}
+                  loading="lazy"
+                />
+                <p>${image.caption}</p>
+                <p>Date taken: ${image.dateTaken}</p>
+                <p>Channel: ${this.apiData.author.channelName}</p>
+              </play-list-slide>
+            `
+          )}
         </div>
       </div>
 
